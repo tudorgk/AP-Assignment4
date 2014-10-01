@@ -1,5 +1,5 @@
 -module(facein).
--export([start/1,get_name/1,add_friend/2,get_friends/1]).
+-export([start/1,name/1,add_friend/2,friends/1]).
 
 
 
@@ -13,11 +13,11 @@ rpc(Pid,Request) ->
 	end.	
 
 % get the name of a Pid
-get_name(Pid) ->
+name(Pid) ->
 	rpc(Pid, get_name).
 
-get_friends(Pid) ->
-	rpc(Pid, get_friends).
+friends(P) ->
+	rpc(P, get_friends).
 
 % add a pid (F) to a pid's (P) firend list
 add_friend(P,F) ->
@@ -40,7 +40,8 @@ loop(PersonDatabase) ->
 			From ! {self(), dict:find(name, PersonDatabase)},
 			loop(PersonDatabase);
 		{From, get_friends} ->
-			From ! {self(), dict:find(friend_list, PersonDatabase)},
+			{ok, FriendList} = dict:find(friend_list, PersonDatabase), 
+			From ! {self(), FriendList},
 			loop(PersonDatabase);
 		{From, {add_friend,{Name,F}}} ->
 			{ok,FriendList} = dict:find(friend_list, PersonDatabase),
