@@ -1,0 +1,4 @@
+ T = facein:start("Tudor").
+ P = facein:start("Paul").
+ facein:add_friend(P,T).
+ facein:get_friends(P). 
