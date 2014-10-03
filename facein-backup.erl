@@ -44,6 +44,9 @@ broadcast(P, M, R) ->
 	MessageRef = make_ref(),
 	rpc_no_response(P, {broadcast_msg, {P,MessageRef, M, R}}).
 
+received_messages(P) ->
+	rpc(P, get_messages).
+
 loop(PersonDatabase) ->
 	receive
 		{From, get_name} ->
@@ -64,8 +67,10 @@ loop(PersonDatabase) ->
 			MessageDict = dict:find(messages,PersonDatabase),
 			%first chcek the radius for resending
 			case R>0 of
-				true -> 
-					true;
+				true -> 	
+					% {ok, FriendList} = dict:find(friend_list, PersonDatabase),
+					% map(fun({FriendName,Pid}) -> Pid ! {self(), {broadcast_msg, {P,MessageRef, M, R-1}}}  end, FriendList),
+					 true;
 				%send to friends with (R-1)
 
 				false -> false
@@ -82,6 +87,10 @@ loop(PersonDatabase) ->
 					From ! {self(), {error, MessageRef, is_already_there}},
 					loop(PersonDatabase)
 			end;
+			{From, get_friends} ->
+				{ok, MessageList} = dict:find(messages, PersonDatabase), 
+				From ! {self(), MessageList},
+				loop(PersonDatabase);
 		{From, Other} ->
 			From ! {self(), {error, {Other}}},
 			loop(PersonDatabase)

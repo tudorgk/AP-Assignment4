@@ -1,13 +1,14 @@
 -module(facein).
--export([start/1,name/1,add_friend/2,friends/1,broadcast/3]).
+-export([start/1,name/1,add_friend/2,friends/1,broadcast/3,received_messages/1]).
 
 
 
 start(Person) -> spawn(fun () -> 
-	loop(dict:store(messages,dict:new(),
+	loop(dict:store(messageRefs,[],
+		 dict:store(messages,[],
 		 dict:store(friend_list,[],
 		 dict:store(name, Person, 
-		 dict:new())))) end).
+		 dict:new()))))) end).
 
 rpc(Pid,Request) ->
 	Pid ! {self(), Request},
@@ -42,7 +43,10 @@ add_friend(P,F) ->
 %broadcast a message (M) to all of (P) friends within radius (R)
 broadcast(P, M, R) ->
 	MessageRef = make_ref(),
-	rpc_no_response(P, {broadcast_msg, {P,MessageRef, M, R}}).
+	rpc(P, {broadcast_msg, {P,MessageRef, M, R}}).
+
+received_messages(P) ->
+	rpc(P, get_messages).
 
 loop(PersonDatabase) ->
 	receive
@@ -61,27 +65,39 @@ loop(PersonDatabase) ->
 			loop(NewPersonDatabase);
 		{From, {broadcast_msg, MessagePackage}} ->
 			{P, MessageRef, M, R} = MessagePackage,
-			MessageDict = dict:find(messages,PersonDatabase),
+			io:format("MessageRef: ~p~n", [MessageRef]),
+			{ok,MessageRefList} = dict:find(messageRefs,PersonDatabase),
+			io:format("MessageRef: ~p~n", [MessageRefList]),
 			%first chcek the radius for resending
-			case R>0 of
-				true -> 
+			case R > 0 of
+				true -> 	
+					%send to friends with (R-1)
+					% {ok, FriendList} = dict:find(friend_list, PersonDatabase),
+					% map(fun({FriendName,Pid}) -> Pid ! {self(), {broadcast_msg, {P,MessageRef, M, R-1}}}  end, FriendList),
 					true;
-				%send to friends with (R-1)
 
 				false -> false
 				%stop sending
 			end,
 
 			%then check if the message is already in the list to stop resending it
-			case dict:is_key(MessageRef, MessageDict) of
+			case lists:member(MessageRef,MessageRefList) of
 				false ->
 					From ! {self(), ok},
-					NewMessageDict = dict:store(MessageRef, {P, M}, MessageDict),
-					loop(dict:store(messages, NewMessageDict, PersonDatabase));
+					NewMessageListRef = [MessageRef | MessageRefList],
+					{ok, MessageList} = dict:find(messages, PersonDatabase),
+					NewMessageList = [{P,M} | MessageList],
+					loop(dict:store(messageRefs,NewMessageListRef,
+						 dict:store(messages, NewMessageList, PersonDatabase)));
 				true ->
 					From ! {self(), {error, MessageRef, is_already_there}},
 					loop(PersonDatabase)
 			end;
+			{From, get_messages} ->
+				{ok, MessageList} = dict:find(messages, PersonDatabase), 
+				% io:format("MessageList: ~p~n", MessageList),
+				From ! {self(), MessageList},
+				loop(PersonDatabase);
 		{From, Other} ->
 			From ! {self(), {error, {Other}}},
 			loop(PersonDatabase)
