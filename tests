@@ -4,3 +4,5 @@
  facein:add_friend(P,T).
  facein:add_friend(P,C).
  facein:friends(P). 
+ facein:broadcast(P,"message", 2).
+ facein:received_messages(P).
