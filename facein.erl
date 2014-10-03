@@ -43,7 +43,7 @@ add_friend(P,F) ->
 %broadcast a message (M) to all of (P) friends within radius (R)
 broadcast(P, M, R) ->
 	MessageRef = make_ref(),
-	rpc(P, {broadcast_msg, {P,MessageRef, M, R}}).
+	rpc_no_response(P, {broadcast_msg, {P,MessageRef, M, R}}).
 
 received_messages(P) ->
 	rpc(P, get_messages).
@@ -72,8 +72,8 @@ loop(PersonDatabase) ->
 			case R > 0 of
 				true -> 	
 					%send to friends with (R-1)
-					% {ok, FriendList} = dict:find(friend_list, PersonDatabase),
-					% map(fun({FriendName,Pid}) -> Pid ! {self(), {broadcast_msg, {P,MessageRef, M, R-1}}}  end, FriendList),
+					{ok, FriendList} = dict:find(friend_list, PersonDatabase),
+					lists:map(fun({FriendName,Pid}) -> Pid ! {self(), {broadcast_msg, {P,MessageRef, M, R-1}}}  end, FriendList),
 					true;
 
 				false -> false
@@ -83,14 +83,12 @@ loop(PersonDatabase) ->
 			%then check if the message is already in the list to stop resending it
 			case lists:member(MessageRef,MessageRefList) of
 				false ->
-					From ! {self(), ok},
 					NewMessageListRef = [MessageRef | MessageRefList],
 					{ok, MessageList} = dict:find(messages, PersonDatabase),
 					NewMessageList = [{P,M} | MessageList],
 					loop(dict:store(messageRefs,NewMessageListRef,
 						 dict:store(messages, NewMessageList, PersonDatabase)));
 				true ->
-					From ! {self(), {error, MessageRef, is_already_there}},
 					loop(PersonDatabase)
 			end;
 			{From, get_messages} ->
