@@ -43,7 +43,8 @@ add_friend(P,F) ->
 %broadcast a message (M) to all of (P) friends within radius (R)
 broadcast(P, M, R) ->
 	MessageRef = make_ref(),
-	rpc_no_response(P, {broadcast_msg, {P,MessageRef, M, R}}).
+	{ok, Name} = name(P),
+	rpc_no_response(P, {broadcast_msg, {Name,MessageRef, M, R}}).
 
 received_messages(P) ->
 	rpc(P, get_messages).
@@ -65,9 +66,9 @@ loop(PersonDatabase) ->
 			loop(NewPersonDatabase);
 		{From, {broadcast_msg, MessagePackage}} ->
 			{P, MessageRef, M, R} = MessagePackage,
-			io:format("MessageRef: ~p~n", [MessageRef]),
+			% io:format("MessageRef: ~p~n", [MessageRef]),
 			{ok,MessageRefList} = dict:find(messageRefs,PersonDatabase),
-			io:format("MessageRef: ~p~n", [MessageRefList]),
+			% io:format("MessageRef: ~p~n", [MessageRefList]),
 			%first chcek the radius for resending
 			case R > 0 of
 				true -> 	
