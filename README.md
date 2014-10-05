@@ -45,15 +45,15 @@ broadcast(P, M, R) ->
 	rpc_no_response(P, {broadcast_msg, {Name,MessageRef, M, R}}).
 ```
 
-The `broadcast` function creates a distinct message reference and passes to every connected friend,which in turn pass along until the radius `R` is 0.
+The `broadcast` function creates a distinct message reference and passes to every connected friend, which in turn pass the message along until the radius `R` is 0.
 
 ###Request handling
 
 The `get_friends`, `add_friends` are pretty straight forward, the first one gets the friend list from the dictionary, and the second one add a friend to the friend list. The database is updated by creating a new dictionary from the old one and recursively calling `loop` with the new dictionary.
 
-The most important part is probably the `brodcast_msg` request. Every process receives apackage woth the process that sent the message, the message reference so that we don't add duplicates to the message list, the actual message string, and the TTL represented by the radius R.
+The most important part is probably the `brodcast_msg` request. Every process receives a package with the process that sent the message, the message reference so that we don't add duplicates to the message list, the actual message string, and the TTL represented by the radius R.
 
-We check that the radius `R` is greateer than 0. If it is, we pass the message on by submiting a request to all the friends from the process who received the message.
+We check that the radius `R` is greater than 0. If it is, we pass the message on by submiting a request to all the friends from the process who received the message.
 ```erlang
 case R > 0 of
 				true -> 	
@@ -66,7 +66,7 @@ case R > 0 of
 				%stop sending
 			end,
 ```
-After that we check if the message is already in the list. If it's not, we append the message to the message list and keep the reference as well in a separate list.
+After that we check if the message is already in the list. If it's not, we append the message to the message list and keep the reference in a separate list.
 ```erlang
 case lists:member(MessageRef,MessageRefList) of
 				false ->
@@ -85,11 +85,11 @@ Testing
 
 ###Usage:
 
-####1.
+####1. Compile using make
 ```bash
 user:shell$ make test
 ```
-####2.
+####2. Run the tests
 ```erlang
 1> tester:test().
 ```
