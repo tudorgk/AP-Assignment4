@@ -1,3 +1,5 @@
+%Author: Tudor Dragan
+
 -module(facein).
 -export([start/1,name/1,add_friend/2,friends/1,broadcast/3,received_messages/1]).
 
