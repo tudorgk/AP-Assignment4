@@ -85,10 +85,12 @@ Testing
 
 ###Usage:
 
-####1.```bash
+####1.
+```bash
 user:shell$ make test
 ```
-####2.```erlang
+####2.
+```erlang
 1> tester:test().
 ```
 
