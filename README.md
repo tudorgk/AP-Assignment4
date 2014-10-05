@@ -47,4 +47,48 @@ broadcast(P, M, R) ->
 
 The `broadcast` function creates a distinct message reference and passes to every connected friend,which in turn pass along until the radius `R` is 0.
 
-####Request handling
+###Request handling
+
+The `get_friends`, `add_friends` are pretty straight forward, the first one gets the friend list from the dictionary, and the second one add a friend to the friend list. The database is updated by creating a new dictionary from the old one and recursively calling `loop` with the new dictionary.
+
+The most important part is probably the `brodcast_msg` request. Every process receives apackage woth the process that sent the message, the message reference so that we don't add duplicates to the message list, the actual message string, and the TTL represented by the radius R.
+
+We check that the radius `R` is greateer than 0. If it is, we pass the message on by submiting a request to all the friends from the process who received the message.
+```erlang
+case R > 0 of
+				true -> 	
+					%send to friends with (R-1)
+					{ok, FriendList} = dict:find(friend_list, PersonDatabase),
+					lists:map(fun({FriendName,Pid}) -> Pid ! {self(), {broadcast_msg, {P,MessageRef, M, R-1}}}  end, FriendList),
+					true;
+
+				false -> false
+				%stop sending
+			end,
+```
+After that we check if the message is already in the list. If it's not, we append the message to the message list and keep the reference as well in a separate list.
+```erlang
+case lists:member(MessageRef,MessageRefList) of
+				false ->
+					NewMessageListRef = [MessageRef | MessageRefList],
+					{ok, MessageList} = dict:find(messages, PersonDatabase),
+					NewMessageList = [{P,M} | MessageList],
+					loop(dict:store(messageRefs,NewMessageListRef,
+						 dict:store(messages, NewMessageList, PersonDatabase)));
+				true ->
+					loop(PersonDatabase)
+			end;
+```
+
+Testing
+-------
+
+###Usage:
+
+####1.```bash
+user:shell$ make test
+```
+####2.```erlang
+1> tester:test().
+```
+
